@@ -1,0 +1,6 @@
+@NutsInventory.Api_HostAddress = http://localhost:5082
+
+GET {{NutsInventory.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

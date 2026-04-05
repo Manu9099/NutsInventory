@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NutsInventory.Api/NutsInventory.Api.csproj" />
+    <Project Path="src/NutsInventory.Application/NutsInventory.Application.csproj" />
+    <Project Path="src/NutsInventory.Domain/NutsInventory.Domain.csproj" />
+    <Project Path="src/NutsInventory.Infrastructure/NutsInventory.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NutsInventory.UnitTests/NutsInventory.UnitTests.csproj" />
+  </Folder>
+</Solution>

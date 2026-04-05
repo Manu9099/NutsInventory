@@ -1,0 +1,11 @@
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\bin\Debug\net10.0\NutsInventory.Domain.deps.json
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\bin\Debug\net10.0\NutsInventory.Domain.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\bin\Debug\net10.0\NutsInventory.Domain.pdb
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\obj\Debug\net10.0\NutsInventory.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\obj\Debug\net10.0\NutsInventory.Domain.AssemblyInfoInputs.cache
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\obj\Debug\net10.0\NutsInventory.Domain.AssemblyInfo.cs
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\obj\Debug\net10.0\NutsInventory.Domain.csproj.CoreCompileInputs.cache
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\obj\Debug\net10.0\NutsInventory.Domain.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\obj\Debug\net10.0\refint\NutsInventory.Domain.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\obj\Debug\net10.0\NutsInventory.Domain.pdb
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Domain\obj\Debug\net10.0\ref\NutsInventory.Domain.dll

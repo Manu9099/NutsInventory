@@ -1,0 +1,15 @@
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\bin\Debug\net10.0\NutsInventory.Application.deps.json
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\bin\Debug\net10.0\NutsInventory.Application.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\bin\Debug\net10.0\NutsInventory.Application.pdb
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\bin\Debug\net10.0\NutsInventory.Domain.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\bin\Debug\net10.0\NutsInventory.Domain.pdb
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\NutsInventory.Application.csproj.AssemblyReference.cache
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\NutsInventory.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\NutsInventory.Application.AssemblyInfoInputs.cache
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\NutsInventory.Application.AssemblyInfo.cs
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\NutsInventory.Application.csproj.CoreCompileInputs.cache
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\NutsInve.FE2A807A.Up2Date
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\NutsInventory.Application.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\refint\NutsInventory.Application.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\NutsInventory.Application.pdb
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\ref\NutsInventory.Application.dll
