@@ -13,3 +13,4 @@ C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\refint\NutsInventory.Application.dll
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\NutsInventory.Application.pdb
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\ref\NutsInventory.Application.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Application\obj\Debug\net10.0\NutsInventory.Application.sourcelink.json

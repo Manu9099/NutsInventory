@@ -17,3 +17,4 @@ C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Infrastructure\o
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Infrastructure\obj\Debug\net10.0\NutsInventory.Infrastructure.pdb
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Infrastructure\obj\Debug\net10.0\NutsInventory.Infrastructure.genruntimeconfig.cache
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Infrastructure\obj\Debug\net10.0\ref\NutsInventory.Infrastructure.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Infrastructure\obj\Debug\net10.0\NutsInventory.Infrastructure.sourcelink.json

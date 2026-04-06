@@ -141,3 +141,4 @@ C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Api\obj\Debug\ne
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Api\obj\Debug\net10.0\NutsInventory.Api.pdb
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Api\obj\Debug\net10.0\NutsInventory.Api.genruntimeconfig.cache
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Api\obj\Debug\net10.0\ref\NutsInventory.Api.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\src\NutsInventory.Api\obj\Debug\net10.0\NutsInventory.Api.sourcelink.json
