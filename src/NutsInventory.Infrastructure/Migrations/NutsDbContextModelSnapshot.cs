@@ -124,6 +124,10 @@ namespace NutsInventory.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("loyalty_points");
 
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
+
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")

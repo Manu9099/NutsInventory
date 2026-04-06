@@ -27,7 +27,38 @@ public sealed class JwtTokenService
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.FullName),
             new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role)
+            new(ClaimTypes.Role, user.Role),
+            new("scope", "admin")
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _options.Issuer,
+            audience: _options.Audience,
+            claims: claims,
+            expires: expiresAt,
+            signingCredentials: credentials
+        );
+
+        var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
+        return (accessToken, expiresAt);
+    }
+
+    public (string AccessToken, DateTime ExpiresAtUtc) CreateToken(Customer customer)
+    {
+        var expiresAt = DateTime.UtcNow.AddMinutes(_options.ExpirationMinutes);
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, customer.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, customer.Email),
+            new(ClaimTypes.NameIdentifier, customer.Id.ToString()),
+            new(ClaimTypes.Name, customer.FullName),
+            new(ClaimTypes.Email, customer.Email),
+            new(ClaimTypes.Role, "Customer"),
+            new("scope", "storefront")
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey));

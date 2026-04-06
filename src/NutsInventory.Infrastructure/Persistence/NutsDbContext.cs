@@ -42,28 +42,72 @@ public class NutsDbContext : DbContext, INutsDbContext
             b.HasIndex(x => x.Sku).IsUnique();
         });
 
-        modelBuilder.Entity<Customer>(b =>
-        {
-            b.ToTable("customers");
-            b.HasKey(x => x.Id);
-            b.Property(x => x.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
-            b.Property(x => x.FirstName).HasColumnName("first_name").HasMaxLength(100).IsRequired();
-            b.Property(x => x.LastName).HasColumnName("last_name").HasMaxLength(100).IsRequired();
-            b.Property(x => x.Phone).HasColumnName("phone").HasMaxLength(20);
-            b.Property(x => x.City).HasColumnName("city").HasMaxLength(100);
-            b.Property(x => x.Address).HasColumnName("address");
-            b.Property(x => x.RegisteredAt).HasColumnName("registered_at");
-            b.Property(x => x.LastPurchaseDate).HasColumnName("last_purchase_date");
-            b.Property(x => x.TotalSpent).HasColumnName("total_spent").HasPrecision(12, 2);
-            b.Property(x => x.TotalPurchases).HasColumnName("total_purchases");
-            b.Property(x => x.LoyaltyPoints).HasColumnName("loyalty_points");
-            b.Property(x => x.Tier).HasColumnName("tier").HasConversion<string>();
-            b.Property(x => x.IsActive).HasColumnName("is_active");
-            b.Property(x => x.CreatedAt).HasColumnName("created_at");
-            b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-            b.HasIndex(x => x.Email).IsUnique();
-        });
+                                    modelBuilder.Entity<Customer>(b =>
+                                {
+                                    b.ToTable("customers");
+                                    b.HasKey(x => x.Id);
 
+                                    b.Property(x => x.Email)
+                                        .HasColumnName("email")
+                                        .HasMaxLength(255)
+                                        .IsRequired();
+
+                                    b.Property(x => x.FirstName)
+                                        .HasColumnName("first_name")
+                                        .HasMaxLength(100)
+                                        .IsRequired();
+
+                                    b.Property(x => x.LastName)
+                                        .HasColumnName("last_name")
+                                        .HasMaxLength(100)
+                                        .IsRequired();
+
+                                    b.Property(x => x.Phone)
+                                        .HasColumnName("phone")
+                                        .HasMaxLength(20);
+
+                                    b.Property(x => x.City)
+                                        .HasColumnName("city")
+                                        .HasMaxLength(100);
+
+                                    b.Property(x => x.Address)
+                                        .HasColumnName("address");
+
+                                    b.Property(x => x.PasswordHash)
+                                        .HasColumnName("password_hash");
+
+                                    b.Property(x => x.RegisteredAt)
+                                        .HasColumnName("registered_at");
+
+                                    b.Property(x => x.LastPurchaseDate)
+                                        .HasColumnName("last_purchase_date");
+
+                                    b.Property(x => x.TotalSpent)
+                                        .HasColumnName("total_spent")
+                                        .HasPrecision(12, 2);
+
+                                    b.Property(x => x.TotalPurchases)
+                                        .HasColumnName("total_purchases");
+
+                                    b.Property(x => x.LoyaltyPoints)
+                                        .HasColumnName("loyalty_points");
+
+                                    b.Property(x => x.Tier)
+                                        .HasColumnName("tier")
+                                        .HasConversion<string>();
+
+                                    b.Property(x => x.IsActive)
+                                        .HasColumnName("is_active");
+
+                                    b.Property(x => x.CreatedAt)
+                                        .HasColumnName("created_at");
+
+                                    b.Property(x => x.UpdatedAt)
+                                        .HasColumnName("updated_at");
+
+                                    b.HasIndex(x => x.Email).IsUnique();
+                                });
+                                
         modelBuilder.Entity<Order>(b =>
         {
             b.ToTable("orders");

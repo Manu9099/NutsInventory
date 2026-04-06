@@ -30,6 +30,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using NutsInventory.Api.Auth;
 using NutsInventory.Domain.Entities;
+using NutsInventory.Application.Orders.GetCustomerOrders;
 
 
 
@@ -55,6 +56,7 @@ builder.Services.Configure<JwtOptions>(
 
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
+builder.Services.AddScoped<IPasswordHasher<Customer>, PasswordHasher<Customer>>();
 
 var FrontendCorsPolicy = "FrontendCorsPolicy";
 
@@ -313,6 +315,254 @@ authGroup.MapGet("/me", async (
     return Results.Ok(new AuthUserResponse(user.Id, user.Email, user.FullName, user.Role));
 }).RequireAuthorization();
 
+var storeAuthGroup = app.MapGroup("/api/store-auth");
+
+storeAuthGroup.MapPost("/register", async (
+    StoreRegisterRequest request,
+    NutsDbContext db,
+    IPasswordHasher<Customer> hasher,
+    JwtTokenService jwtTokenService,
+    CancellationToken cancellationToken) =>
+{
+    var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
+    var existingCustomer = await db.Customers
+        .FirstOrDefaultAsync(x => x.Email == normalizedEmail, cancellationToken);
+
+    if (existingCustomer is not null)
+    {
+        if (!existingCustomer.IsActive)
+            throw new InvalidOperationException("La cuenta de cliente está inactiva.");
+
+        if (existingCustomer.HasAccount)
+            throw new InvalidOperationException("Ya existe una cuenta registrada con este correo.");
+
+        existingCustomer.UpdateContactInfo(request.Phone, request.City, request.Address);
+        existingCustomer.SetPasswordHash(
+            hasher.HashPassword(existingCustomer, request.Password)
+        );
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        var (accessToken, expiresAt) = jwtTokenService.CreateToken(existingCustomer);
+
+        return Results.Ok(new LoginResponse(
+            accessToken,
+            expiresAt,
+            new AuthUserResponse(
+                existingCustomer.Id,
+                existingCustomer.Email,
+                existingCustomer.FullName,
+                "Customer"
+            )
+        ));
+    }
+
+    var customer = new Customer(
+        normalizedEmail,
+        request.FirstName.Trim(),
+        request.LastName.Trim()
+    );
+
+    customer.UpdateContactInfo(request.Phone, request.City, request.Address);
+    customer.SetPasswordHash(hasher.HashPassword(customer, request.Password));
+
+    db.Customers.Add(customer);
+    await db.SaveChangesAsync(cancellationToken);
+
+    var (newAccessToken, newExpiresAt) = jwtTokenService.CreateToken(customer);
+
+    return Results.Ok(new LoginResponse(
+        newAccessToken,
+        newExpiresAt,
+        new AuthUserResponse(
+            customer.Id,
+            customer.Email,
+            customer.FullName,
+            "Customer"
+        )
+    ));
+});
+
+storeAuthGroup.MapPost("/login", async (
+    LoginRequest request,
+    NutsDbContext db,
+    IPasswordHasher<Customer> hasher,
+    JwtTokenService jwtTokenService,
+    CancellationToken cancellationToken) =>
+{
+    var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
+    var customer = await db.Customers
+        .FirstOrDefaultAsync(x => x.Email == normalizedEmail && x.IsActive, cancellationToken);
+
+    if (customer is null || !customer.HasAccount || string.IsNullOrWhiteSpace(customer.PasswordHash))
+        throw new InvalidOperationException("Credenciales inválidas.");
+
+    var verification = hasher.VerifyHashedPassword(customer, customer.PasswordHash, request.Password);
+
+    if (verification == PasswordVerificationResult.Failed)
+        throw new InvalidOperationException("Credenciales inválidas.");
+
+    var (accessToken, expiresAt) = jwtTokenService.CreateToken(customer);
+
+    return Results.Ok(new LoginResponse(
+        accessToken,
+        expiresAt,
+        new AuthUserResponse(
+            customer.Id,
+            customer.Email,
+            customer.FullName,
+            "Customer"
+        )
+    ));
+});
+
+storeAuthGroup.MapGet("/me", async (
+    ClaimsPrincipal principal,
+    NutsDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var scope = principal.FindFirstValue("scope");
+    var role = principal.FindFirstValue(ClaimTypes.Role);
+    var userIdValue = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    if (scope != "storefront" || role != "Customer")
+        return Results.Unauthorized();
+
+    if (!int.TryParse(userIdValue, out var customerId))
+        return Results.Unauthorized();
+
+    var customer = await db.Customers
+        .AsNoTracking()
+        .FirstOrDefaultAsync(x => x.Id == customerId && x.IsActive, cancellationToken);
+
+    if (customer is null)
+        return Results.Unauthorized();
+
+    return Results.Ok(new AuthUserResponse(
+        customer.Id,
+        customer.Email,
+        customer.FullName,
+        "Customer"
+    ));
+}).RequireAuthorization();
+var storeOrdersGroup = app.MapGroup("/api/store/orders").RequireAuthorization();
+
+storeOrdersGroup.MapPost("", async (
+    StoreCreateOrderRequest request,
+    ClaimsPrincipal principal,
+    ISender sender,
+    CancellationToken cancellationToken) =>
+{
+    var customerId = GetAuthenticatedStoreCustomerId(principal);
+
+    var command = new CreateOrderCommand(
+        customerId,
+        request.Items
+            .Select(x => new CreateOrderItemRequest(x.ProductId, x.Quantity))
+            .ToList(),
+        request.LoyaltyPointsToRedeem,
+        request.Notes
+    );
+
+    var result = await sender.Send(command, cancellationToken);
+
+    return Results.Created($"/api/store/orders/{result.OrderId}", result);
+});
+
+storeOrdersGroup.MapGet("/me", async (
+    ClaimsPrincipal principal,
+    ISender sender,
+    CancellationToken cancellationToken) =>
+{
+    var customerId = GetAuthenticatedStoreCustomerId(principal);
+
+    var result = await sender.Send(
+        new GetCustomerOrdersQuery(customerId),
+        cancellationToken
+    );
+
+    return Results.Ok(result);
+});
+static int GetAuthenticatedStoreCustomerId(ClaimsPrincipal principal)
+{
+    var scope = principal.FindFirstValue("scope");
+    var role = principal.FindFirstValue(ClaimTypes.Role);
+    var userIdValue = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    if (scope != "storefront" || role != "Customer")
+        throw new UnauthorizedAccessException("Token inválido para el storefront.");
+
+    if (!int.TryParse(userIdValue, out var customerId))
+        throw new UnauthorizedAccessException("No se pudo resolver el cliente autenticado.");
+
+    return customerId;
+}
+var storeCustomersGroup = app.MapGroup("/api/store/customers").RequireAuthorization();
+
+storeCustomersGroup.MapGet("/me", async (
+    ClaimsPrincipal principal,
+    NutsDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var customerId = GetAuthenticatedStoreCustomerId(principal);
+
+    var customer = await db.Customers
+        .AsNoTracking()
+        .FirstOrDefaultAsync(x => x.Id == customerId && x.IsActive, cancellationToken);
+
+    if (customer is null)
+        return Results.Unauthorized();
+
+    return Results.Ok(new StoreCustomerProfileResponse(
+        customer.Id,
+        customer.Email,
+        $"{customer.FirstName} {customer.LastName}".Trim(),
+        customer.Phone,
+        customer.City,
+        customer.Address,
+        !string.IsNullOrWhiteSpace(customer.Phone)
+            && !string.IsNullOrWhiteSpace(customer.City)
+            && !string.IsNullOrWhiteSpace(customer.Address)
+    ));
+});
+
+storeCustomersGroup.MapPut("/me", async (
+    UpdateStoreCustomerProfileRequest request,
+    ClaimsPrincipal principal,
+    NutsDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var customerId = GetAuthenticatedStoreCustomerId(principal);
+
+    var customer = await db.Customers
+        .FirstOrDefaultAsync(x => x.Id == customerId && x.IsActive, cancellationToken);
+
+    if (customer is null)
+        return Results.Unauthorized();
+
+    customer.UpdateContactInfo(
+        string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim(),
+        string.IsNullOrWhiteSpace(request.City) ? null : request.City.Trim(),
+        string.IsNullOrWhiteSpace(request.Address) ? null : request.Address.Trim()
+    );
+
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(new StoreCustomerProfileResponse(
+        customer.Id,
+        customer.Email,
+        $"{customer.FirstName} {customer.LastName}".Trim(),
+        customer.Phone,
+        customer.City,
+        customer.Address,
+        !string.IsNullOrWhiteSpace(customer.Phone)
+            && !string.IsNullOrWhiteSpace(customer.City)
+            && !string.IsNullOrWhiteSpace(customer.Address)
+    ));
+});
+
 app.Run();
 
 public sealed record RestockRequest(int Quantity, string? Reason);
@@ -331,6 +581,31 @@ public sealed record CreateCustomerRequest(
     string Email,
     string FirstName,
     string LastName,
+    string? Phone,
+    string? City,
+    string? Address
+);
+public sealed record StoreCreateOrderRequest(
+    List<StoreCreateOrderItemRequest> Items,
+    int LoyaltyPointsToRedeem,
+    string? Notes
+);
+
+public sealed record StoreCreateOrderItemRequest(
+    int ProductId,
+    int Quantity
+);
+public sealed record StoreCustomerProfileResponse(
+    int Id,
+    string Email,
+    string FullName,
+    string? Phone,
+    string? City,
+    string? Address,
+    bool IsProfileComplete
+);
+
+public sealed record UpdateStoreCustomerProfileRequest(
     string? Phone,
     string? City,
     string? Address
