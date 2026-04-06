@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NutsInventory.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ae3b1734b4e73e0165f69fb4d2297e86e7a74595")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6d9d1827642d8b07c47249aa873b3cc26c6446ad")]
 [assembly: System.Reflection.AssemblyProductAttribute("NutsInventory.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NutsInventory.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
