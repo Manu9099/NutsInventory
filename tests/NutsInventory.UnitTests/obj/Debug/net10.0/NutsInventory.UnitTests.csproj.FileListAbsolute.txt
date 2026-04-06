@@ -117,3 +117,4 @@ C:\Users\manuc\OneDrive\Desktop\NutsInventory\tests\NutsInventory.UnitTests\obj\
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\tests\NutsInventory.UnitTests\obj\Debug\net10.0\NutsInventory.UnitTests.pdb
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\tests\NutsInventory.UnitTests\obj\Debug\net10.0\NutsInventory.UnitTests.genruntimeconfig.cache
 C:\Users\manuc\OneDrive\Desktop\NutsInventory\tests\NutsInventory.UnitTests\obj\Debug\net10.0\ref\NutsInventory.UnitTests.dll
+C:\Users\manuc\OneDrive\Desktop\NutsInventory\tests\NutsInventory.UnitTests\obj\Debug\net10.0\NutsInventory.UnitTests.sourcelink.json

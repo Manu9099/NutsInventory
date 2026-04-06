@@ -5,6 +5,10 @@ export interface StoreCustomerProfile {
   phone?: string | null
   city?: string | null
   address?: string | null
+  loyaltyPoints?: number
+  tier?: string
+  totalSpent?: number
+  totalPurchases?: number
   isProfileComplete: boolean
 }
 

@@ -514,18 +514,21 @@ storeCustomersGroup.MapGet("/me", async (
 
     if (customer is null)
         return Results.Unauthorized();
-
-    return Results.Ok(new StoreCustomerProfileResponse(
-        customer.Id,
-        customer.Email,
-        $"{customer.FirstName} {customer.LastName}".Trim(),
-        customer.Phone,
-        customer.City,
-        customer.Address,
-        !string.IsNullOrWhiteSpace(customer.Phone)
-            && !string.IsNullOrWhiteSpace(customer.City)
-            && !string.IsNullOrWhiteSpace(customer.Address)
-    ));
+return Results.Ok(new StoreCustomerProfileResponse(
+    customer.Id,
+    customer.Email,
+    $"{customer.FirstName} {customer.LastName}".Trim(),
+    customer.Phone,
+    customer.City,
+    customer.Address,
+    customer.LoyaltyPoints,
+    customer.Tier.ToString(),
+    customer.TotalSpent,
+    customer.TotalPurchases,
+    !string.IsNullOrWhiteSpace(customer.Phone)
+        && !string.IsNullOrWhiteSpace(customer.City)
+        && !string.IsNullOrWhiteSpace(customer.Address)
+));;
 });
 
 storeCustomersGroup.MapPut("/me", async (
@@ -549,18 +552,21 @@ storeCustomersGroup.MapPut("/me", async (
     );
 
     await db.SaveChangesAsync(cancellationToken);
-
-    return Results.Ok(new StoreCustomerProfileResponse(
-        customer.Id,
-        customer.Email,
-        $"{customer.FirstName} {customer.LastName}".Trim(),
-        customer.Phone,
-        customer.City,
-        customer.Address,
-        !string.IsNullOrWhiteSpace(customer.Phone)
-            && !string.IsNullOrWhiteSpace(customer.City)
-            && !string.IsNullOrWhiteSpace(customer.Address)
-    ));
+return Results.Ok(new StoreCustomerProfileResponse(
+    customer.Id,
+    customer.Email,
+    $"{customer.FirstName} {customer.LastName}".Trim(),
+    customer.Phone,
+    customer.City,
+    customer.Address,
+    customer.LoyaltyPoints,
+    customer.Tier.ToString(),
+    customer.TotalSpent,
+    customer.TotalPurchases,
+    !string.IsNullOrWhiteSpace(customer.Phone)
+        && !string.IsNullOrWhiteSpace(customer.City)
+        && !string.IsNullOrWhiteSpace(customer.Address)
+));
 });
 
 app.Run();
@@ -595,6 +601,12 @@ public sealed record StoreCreateOrderItemRequest(
     int ProductId,
     int Quantity
 );
+
+public sealed record UpdateStoreCustomerProfileRequest(
+    string? Phone,
+    string? City,
+    string? Address
+);
 public sealed record StoreCustomerProfileResponse(
     int Id,
     string Email,
@@ -602,11 +614,9 @@ public sealed record StoreCustomerProfileResponse(
     string? Phone,
     string? City,
     string? Address,
+    int LoyaltyPoints,
+    string Tier,
+    decimal TotalSpent,
+    int TotalPurchases,
     bool IsProfileComplete
-);
-
-public sealed record UpdateStoreCustomerProfileRequest(
-    string? Phone,
-    string? City,
-    string? Address
 );

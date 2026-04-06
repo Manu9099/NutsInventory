@@ -9,6 +9,8 @@ import { LoginPage } from '../../pages/auth/LoginPage'
 import { RegisterPage } from '../../pages/auth/RegisterPage'
 import { ProfilePage } from '../../pages/profile/ProfilePage'
 import { OrdersPage } from '../../pages/orders/OrdersPage'
+import { ProtectedRoute } from '../../components/auth/ProtectedRoute'
+import { PublicOnlyRoute } from '../../components/auth/PublicOnlyRoute'
 
 export function AppRouter() {
   return (
@@ -19,11 +21,17 @@ export function AppRouter() {
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
           <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/orders" element={<OrdersPage />} />
+
+          <Route element={<PublicOnlyRoute />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute />}>
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
