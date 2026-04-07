@@ -1,15 +1,17 @@
-import { Outlet } from 'react-router-dom';
-import { Navbar } from '../../components/common/Navbar';
-import { Footer } from '../../components/common/Footer';
+import { Outlet } from 'react-router-dom'
+import { Navbar } from '../../components/common/Navbar'
+import { Footer } from '../../components/common/Footer'
+import { CartDrawer } from '../../components/cart/CartDrawer'
 
 export function StoreLayout() {
   return (
-    <div className="min-h-screen flex flex-col bg-stone-50 text-stone-900">
+    <>
       <Navbar />
-      <main className="flex-1">
+      <main className="min-h-[calc(100vh-160px)]">
         <Outlet />
       </main>
       <Footer />
-    </div>
-  );
+      <CartDrawer />
+    </>
+  )
 }

@@ -4,6 +4,7 @@ import type { CartItem } from '../types/cart.types'
 
 interface CartState {
   items: CartItem[]
+  isCartDrawerOpen: boolean
   addItem: (item: CartItem) => void
   removeItem: (productId: number) => void
   clearCart: () => void
@@ -11,12 +12,16 @@ interface CartState {
   incrementItem: (productId: number) => void
   decrementItem: (productId: number) => void
   getItemQuantity: (productId: number) => number
+  openCartDrawer: () => void
+  closeCartDrawer: () => void
+  toggleCartDrawer: () => void
 }
 
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      isCartDrawerOpen: false,
 
       addItem: (item) =>
         set((state) => {
@@ -79,10 +84,16 @@ export const useCartStore = create<CartState>()(
         const item = get().items.find((x) => x.productId === productId)
         return item?.quantity ?? 0
       },
+
+      openCartDrawer: () => set({ isCartDrawerOpen: true }),
+      closeCartDrawer: () => set({ isCartDrawerOpen: false }),
+      toggleCartDrawer: () =>
+        set((state) => ({ isCartDrawerOpen: !state.isCartDrawerOpen })),
     }),
     {
       name: 'nutsinventory-cart',
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ items: state.items }),
     },
   ),
 )

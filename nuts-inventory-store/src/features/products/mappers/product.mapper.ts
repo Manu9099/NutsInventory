@@ -4,10 +4,10 @@ export function mapProduct(apiProduct: any): Product {
   return {
     id: apiProduct.id,
     name: apiProduct.name,
-    description: apiProduct.description,
-    price: apiProduct.price,
-    stock: apiProduct.stock,
+    description: apiProduct.description ?? '',
+    price: Number(apiProduct.price ?? 0),
+    stock: Number(apiProduct.stockQuantity ?? apiProduct.stock ?? 0),
     imageUrl: apiProduct.imageUrl,
-    categoryName: apiProduct.categoryName,
+    categoryName: apiProduct.category ?? apiProduct.categoryName,
   }
 }

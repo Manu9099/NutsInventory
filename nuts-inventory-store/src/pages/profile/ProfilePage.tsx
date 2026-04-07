@@ -1,16 +1,20 @@
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   BadgeCheck,
   CreditCard,
   LogOut,
-  MapPin,
   PackageCheck,
+  PencilLine,
   Phone,
+  Save,
   Star,
   User,
+  X,
 } from 'lucide-react'
 import { useAuth } from '../../features/auth/hooks/useAuth'
 import { useStoreCustomerProfile } from '../../features/customers/hooks/useStoreCustomerProfile'
+import { useUpdateStoreCustomerProfile } from '../../features/customers/hooks/useUpdateStoreCustomerProfile'
 
 export function ProfilePage() {
   const navigate = useNavigate()
@@ -25,10 +29,74 @@ export function ProfilePage() {
     isError: isProfileError,
   } = useStoreCustomerProfile(isAuthenticated)
 
+  const { mutateAsync: updateProfile, isPending: isSaving } =
+    useUpdateStoreCustomerProfile()
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [city, setCity] = useState('')
+  const [address, setAddress] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    if (!profile) return
+    setPhone(profile.phone ?? '')
+    setCity(profile.city ?? '')
+    setAddress(profile.address ?? '')
+  }, [profile])
+
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('authUser')
     navigate('/login')
+  }
+
+  const handleCancelEdit = () => {
+    if (!profile) return
+    setPhone(profile.phone ?? '')
+    setCity(profile.city ?? '')
+    setAddress(profile.address ?? '')
+    setErrorMessage('')
+    setSuccessMessage('')
+    setIsEditing(false)
+  }
+
+  const handleSave = async () => {
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    if (!phone.trim()) {
+      setErrorMessage('Ingresa el teléfono.')
+      return
+    }
+
+    if (!city.trim()) {
+      setErrorMessage('Ingresa la ciudad.')
+      return
+    }
+
+    if (!address.trim()) {
+      setErrorMessage('Ingresa la dirección.')
+      return
+    }
+
+    try {
+      await updateProfile({
+        phone: phone.trim(),
+        city: city.trim(),
+        address: address.trim(),
+      })
+
+      setSuccessMessage('Tus datos se actualizaron correctamente.')
+      setIsEditing(false)
+    } catch (error: any) {
+      setErrorMessage(
+        error?.response?.data?.message ||
+          error?.message ||
+          'No se pudieron actualizar tus datos.',
+      )
+    }
   }
 
   if (isAuthLoading || isProfileLoading) {
@@ -83,9 +151,49 @@ export function ProfilePage() {
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-6">
           <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-stone-200">
-            <div className="mb-5 flex items-center gap-2">
-              <User className="h-5 w-5 text-stone-700" />
-              <h2 className="text-xl font-semibold text-stone-900">Información personal</h2>
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-stone-700" />
+                <h2 className="text-xl font-semibold text-stone-900">
+                  Información personal
+                </h2>
+              </div>
+
+              {!isEditing ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMessage('')
+                    setSuccessMessage('')
+                    setIsEditing(true)
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
+                >
+                  <PencilLine className="h-4 w-4" />
+                  Editar
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="inline-flex items-center gap-2 rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
+                  >
+                    <X className="h-4 w-4" />
+                    Cancelar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-400"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isSaving ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -107,41 +215,76 @@ export function ProfilePage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
                   Teléfono
                 </p>
-                <p className="mt-1 text-sm text-stone-900">{profile.phone || 'No registrado'}</p>
+                {isEditing ? (
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="999 999 999"
+                    className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm text-stone-900">
+                    {profile.phone || 'No registrado'}
+                  </p>
+                )}
               </div>
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
                   Ciudad
                 </p>
-                <p className="mt-1 text-sm text-stone-900">{profile.city || 'No registrada'}</p>
+                {isEditing ? (
+                  <input
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="Lima"
+                    className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm text-stone-900">
+                    {profile.city || 'No registrada'}
+                  </p>
+                )}
               </div>
 
               <div className="sm:col-span-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
                   Dirección
                 </p>
-                <p className="mt-1 text-sm text-stone-900">
-                  {profile.address || 'No registrada'}
-                </p>
+                {isEditing ? (
+                  <input
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Av. Ejemplo 123"
+                    className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm text-stone-900">
+                    {profile.address || 'No registrada'}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="mt-6">
-              <Link
-                to="/checkout"
-                className="inline-flex items-center gap-2 rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
-              >
-                <MapPin className="h-4 w-4" />
-                Completar o usar datos en checkout
-              </Link>
-            </div>
+            {errorMessage ? (
+              <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {errorMessage}
+              </div>
+            ) : null}
+
+            {successMessage ? (
+              <div className="mt-5 rounded-2xl border border-lime-200 bg-lime-50 p-4 text-sm text-lime-700">
+                {successMessage}
+              </div>
+            ) : null}
           </div>
 
           <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-stone-200">
             <div className="mb-5 flex items-center gap-2">
               <PackageCheck className="h-5 w-5 text-stone-700" />
-              <h2 className="text-xl font-semibold text-stone-900">Accesos rápidos</h2>
+              <h2 className="text-xl font-semibold text-stone-900">
+                Accesos rápidos
+              </h2>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -151,18 +294,21 @@ export function ProfilePage() {
               >
                 Ver mis pedidos
               </Link>
+
               <Link
                 to="/catalog"
                 className="rounded-2xl border border-stone-200 p-4 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
               >
                 Ir al catálogo
               </Link>
+
               <Link
                 to="/checkout"
                 className="rounded-2xl border border-stone-200 p-4 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
               >
                 Ir al checkout
               </Link>
+
               <button
                 type="button"
                 onClick={handleLogout}
@@ -183,7 +329,7 @@ export function ProfilePage() {
             </div>
 
             <p className="mt-4 text-4xl font-bold text-amber-900">
-             {profile.loyaltyPoints ?? 0}
+              {profile.loyaltyPoints ?? 0}
             </p>
             <p className="mt-2 text-sm text-amber-800">
               puntos disponibles para canjear en futuras compras.
@@ -207,20 +353,22 @@ export function ProfilePage() {
             <div className="space-y-4 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-stone-500">Nivel</span>
-                <span className="font-semibold text-stone-900">{profile.tier}</span>
+                <span className="font-semibold text-stone-900">
+                  {profile.tier || 'Bronze'}
+                </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-stone-500">Total gastado</span>
                 <span className="font-semibold text-stone-900">
-                 S/ {(profile.totalSpent ?? 0).toFixed(2)}
+                  S/ {(profile.totalSpent ?? 0).toFixed(2)}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-stone-500">Compras realizadas</span>
                 <span className="font-semibold text-stone-900">
-                 {profile.totalPurchases ?? 0}
+                  {profile.totalPurchases ?? 0}
                 </span>
               </div>
 
@@ -236,7 +384,9 @@ export function ProfilePage() {
           <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-stone-200">
             <div className="mb-4 flex items-center gap-2">
               <Phone className="h-5 w-5 text-stone-700" />
-              <h2 className="text-xl font-semibold text-stone-900">Estado de contacto</h2>
+              <h2 className="text-xl font-semibold text-stone-900">
+                Estado de contacto
+              </h2>
             </div>
 
             <p className="text-sm leading-6 text-stone-600">
