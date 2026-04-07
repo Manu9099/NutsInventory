@@ -62,7 +62,7 @@ export function LoginPage() {
           <div className="flex items-start gap-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
             <p>
-              Este login ahora usa el flujo de <span className="font-semibold">customer auth</span> del storefront.
+              Este login ahora usa el flujo de <span className="font-semibold"> nuts inventory auth</span> 
             </p>
           </div>
         </div>

@@ -83,7 +83,7 @@ export function RegisterPage() {
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Luciana"
+              placeholder="Juan"
               className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
               required
             />
