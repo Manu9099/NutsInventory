@@ -5,6 +5,7 @@ import type { CartItem } from '../types/cart.types'
 interface CartState {
   items: CartItem[]
   isCartDrawerOpen: boolean
+  cartNotice: string | null
   addItem: (item: CartItem) => void
   removeItem: (productId: number) => void
   clearCart: () => void
@@ -15,6 +16,8 @@ interface CartState {
   openCartDrawer: () => void
   closeCartDrawer: () => void
   toggleCartDrawer: () => void
+  setCartNotice: (message: string | null) => void
+  clearCartNotice: () => void
 }
 
 export const useCartStore = create<CartState>()(
@@ -22,6 +25,7 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       isCartDrawerOpen: false,
+      cartNotice: null,
 
       addItem: (item) =>
         set((state) => {
@@ -89,6 +93,9 @@ export const useCartStore = create<CartState>()(
       closeCartDrawer: () => set({ isCartDrawerOpen: false }),
       toggleCartDrawer: () =>
         set((state) => ({ isCartDrawerOpen: !state.isCartDrawerOpen })),
+
+      setCartNotice: (message) => set({ cartNotice: message }),
+      clearCartNotice: () => set({ cartNotice: null }),
     }),
     {
       name: 'nutsinventory-cart',

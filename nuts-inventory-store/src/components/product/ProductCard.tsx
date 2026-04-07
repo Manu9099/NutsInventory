@@ -8,7 +8,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { addItem, openCartDrawer } = useCart()
+  const { addItem, openCartDrawer, setCartNotice } = useCart()
 
   const isOutOfStock = product.stock <= 0
   const isLowStock = product.stock > 0 && product.stock <= 10
@@ -24,6 +24,7 @@ const handleAddToCart = () => {
     imageUrl: product.imageUrl,
   })
 
+  setCartNotice(`${product.name} se agregó al carrito.`)
   openCartDrawer()
 }
 

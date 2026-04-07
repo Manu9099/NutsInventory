@@ -14,7 +14,7 @@ import { useCart } from '../../features/cart/hooks/useCart'
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: product, isLoading, isError, error } = useProduct(id ?? '')
- const { addItem, openCartDrawer } = useCart()
+const { addItem, openCartDrawer, setCartNotice } = useCart()
 
   const [quantity, setQuantity] = useState(1)
   const [successMessage, setSuccessMessage] = useState('')
@@ -50,20 +50,21 @@ export function ProductDetailPage() {
     setQuantity(Math.max(1, Math.min(parsed, maxQuantity)))
   }
 
-  const handleAddToCart = () => {
-    if (!product || product.stock <= 0) return
+const handleAddToCart = () => {
+  if (!product || product.stock <= 0) return
 
-    addItem({
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      quantity,
-      imageUrl: product.imageUrl,
-    })
+  addItem({
+    productId: product.id,
+    name: product.name,
+    price: product.price,
+    quantity,
+    imageUrl: product.imageUrl,
+  })
 
-    setSuccessMessage('Producto agregado al carrito.')
-    openCartDrawer()
-  }
+  setSuccessMessage('Producto agregado al carrito.')
+  setCartNotice(`${product.name} se agregó al carrito.`)
+  openCartDrawer()
+}
 
   if (isLoading) {
     return (
