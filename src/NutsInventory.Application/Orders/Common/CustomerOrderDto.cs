@@ -15,6 +15,7 @@ public sealed record CustomerOrderDto(
     string Status,
     decimal TotalAmount,
     decimal DiscountApplied,
+    int LoyaltyPointsRedeemed,
     int LoyaltyPointsEarned,
     string? Notes,
     IReadOnlyList<CustomerOrderItemDto> Items

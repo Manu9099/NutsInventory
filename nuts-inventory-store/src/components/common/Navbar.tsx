@@ -26,7 +26,8 @@ export function Navbar() {
     typeof window !== 'undefined' && !!localStorage.getItem('token') && !!user
 
   const { data: profile } = useStoreCustomerProfile(isAuthenticated)
-
+  const [isCartBadgeAnimating, setIsCartBadgeAnimating] = useState(false)
+  
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -34,7 +35,26 @@ export function Navbar() {
   const mobileMenuRef = useRef<HTMLDivElement | null>(null)
 
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
+  const previousTotalItemsRef = useRef(totalItems)
   
+useEffect(() => {
+  const previousTotalItems = previousTotalItemsRef.current
+
+  if (previousTotalItems !== totalItems && totalItems > 0) {
+    setIsCartBadgeAnimating(true)
+
+    const timeout = window.setTimeout(() => {
+      setIsCartBadgeAnimating(false)
+    }, 180)
+
+    previousTotalItemsRef.current = totalItems
+
+    return () => window.clearTimeout(timeout)
+  }
+
+  previousTotalItemsRef.current = totalItems
+}, [totalItems])
+
 
   const firstName = useMemo(() => {
     if (!user?.fullName) return ''
@@ -213,8 +233,14 @@ export function Navbar() {
           aria-label="Abrir carrito"
         >
           <ShoppingCart className="h-4 w-4" />
-          {totalItems > 0 ? (
-            <span className="absolute -right-1 -top-1 inline-flex min-h-[18px]- min-w-[18px]- items-center justify-center rounded-full bg-stone-900 px-1 text-[10px] font-semibold text-white">
+              {totalItems > 0 ? (
+            <span
+              className={[
+                'absolute -right-1 -top-1 inline-flex min-h-[18px]- min-w-[18px]- items-center justify-center rounded-full bg-stone-900 px-1 text-[10px] font-semibold text-white',
+                'transform-gpu transition-transform duration-200 ease-out',
+                isCartBadgeAnimating ? 'scale-125' : 'scale-100',
+              ].join(' ')}
+            >
               {totalItems}
             </span>
           ) : null}

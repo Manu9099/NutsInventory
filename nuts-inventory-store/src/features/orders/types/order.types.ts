@@ -32,6 +32,7 @@ export interface CustomerOrder {
   status: string
   totalAmount: number
   discountApplied: number
+  loyaltyPointsRedeemed: number
   loyaltyPointsEarned: number
   notes?: string | null
   items: CustomerOrderItem[]

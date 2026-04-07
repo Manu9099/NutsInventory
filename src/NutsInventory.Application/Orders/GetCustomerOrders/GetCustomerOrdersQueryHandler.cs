@@ -6,7 +6,7 @@ using NutsInventory.Application.Orders.Common;
 namespace NutsInventory.Application.Orders.GetCustomerOrders;
 
 public sealed class GetCustomerOrdersQueryHandler
-    : IRequestHandler<GetCustomerOrdersQuery, IReadOnlyList<CustomerOrderDto>>
+    : IRequestHandler<GetCustomerOrdersQuery, List<CustomerOrderDto>>
 {
     private readonly INutsDbContext _db;
 
@@ -15,7 +15,7 @@ public sealed class GetCustomerOrdersQueryHandler
         _db = db;
     }
 
-    public async Task<IReadOnlyList<CustomerOrderDto>> Handle(
+    public async Task<List<CustomerOrderDto>> Handle(
         GetCustomerOrdersQuery request,
         CancellationToken cancellationToken)
     {
@@ -35,6 +35,7 @@ public sealed class GetCustomerOrdersQueryHandler
                 x.Status.ToString(),
                 x.TotalAmount,
                 x.DiscountApplied,
+                (int)Math.Round(x.DiscountApplied * 100m, MidpointRounding.AwayFromZero),
                 x.LoyaltyPointsEarned,
                 x.Notes,
                 x.Items
