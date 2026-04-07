@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { BadgeCheck, Package, ShoppingCart } from 'lucide-react'
 import type { Product } from '../../features/products/types/product.types'
 import { useCart } from '../../features/cart/hooks/useCart'
@@ -8,48 +7,42 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { addItem, openCartDrawer, setCartNotice } = useCart()
+  const { addItem, openCartDrawer, setCartNotice, getItemQuantity } = useCart()
 
   const isOutOfStock = product.stock <= 0
   const isLowStock = product.stock > 0 && product.stock <= 10
+  const quantityInCart = getItemQuantity(product.id)
 
-const handleAddToCart = () => {
-  if (isOutOfStock) return
+  const handleAddToCart = () => {
+    if (isOutOfStock) return
 
-  addItem({
-    productId: product.id,
-    name: product.name,
-    price: product.price,
-    quantity: 1,
-    imageUrl: product.imageUrl,
-  })
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      imageUrl: product.imageUrl,
+    })
 
-  setCartNotice(`${product.name} se agregó al carrito.`)
-  openCartDrawer()
-}
+    setCartNotice(`${product.name} se agregó al carrito.`)
+    openCartDrawer()
+  }
 
   return (
     <article className="group overflow-hidden rounded-[2rem]- border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="relative">
-        <Link
-          to={`/products/${product.id}`}
-          className="block h-64 overflow-hidden bg-stone-100"
-        >
-          {product.imageUrl ? (
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-            />
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-              <Package className="h-10 w-10 text-stone-400" />
-              <p className="mt-3 text-sm font-medium text-stone-500">
-                Sin imagen
-              </p>
-            </div>
-          )}
-        </Link>
+      <div className="relative h-64 overflow-hidden bg-stone-100">
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+          />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+            <Package className="h-10 w-10 text-stone-400" />
+            <p className="mt-3 text-sm font-medium text-stone-500">Sin imagen</p>
+          </div>
+        )}
 
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
           <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-stone-700 shadow-sm">
@@ -64,11 +57,7 @@ const handleAddToCart = () => {
             <span className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white shadow-sm">
               Últimas {product.stock}
             </span>
-          ) : (
-            <span className="rounded-full bg-lime-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
-              Disponible
-            </span>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -77,7 +66,7 @@ const handleAddToCart = () => {
           {product.name}
         </h3>
 
-        <p className="mt-3 line-clamp-3 min-h-[4.5rem]- text-sm leading-6 text-stone-600">
+        <p className="mt-3 min-h-[4.5rem]- line-clamp-3 text-sm leading-6 text-stone-600">
           {product.description || 'Producto disponible en catálogo.'}
         </p>
 
@@ -86,6 +75,7 @@ const handleAddToCart = () => {
             <p className="text-2xl font-bold text-stone-900">
               S/ {product.price.toFixed(2)}
             </p>
+
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
               <span className="rounded-full bg-stone-100 px-3 py-1 font-medium text-stone-700">
                 Stock: {product.stock}
@@ -97,26 +87,25 @@ const handleAddToCart = () => {
                   Listo para compra
                 </span>
               ) : null}
+
+              {quantityInCart > 0 ? (
+                <span className="rounded-full bg-stone-900 px-3 py-1 font-medium text-white">
+                  En carrito: {quantityInCart}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <Link
-            to={`/products/${product.id}`}
-            className="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
-          >
-            Ver detalle
-          </Link>
-
+        <div className="mt-5">
           <button
             type="button"
             onClick={handleAddToCart}
             disabled={isOutOfStock}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-400"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-400"
           >
             <ShoppingCart className="h-4 w-4" />
-            {isOutOfStock ? 'Sin stock' : 'Agregar'}
+            {isOutOfStock ? 'Sin stock' : quantityInCart > 0 ? 'Agregar uno más' : 'Agregar al carrito'}
           </button>
         </div>
       </div>

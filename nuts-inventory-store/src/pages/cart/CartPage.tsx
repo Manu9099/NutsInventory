@@ -47,8 +47,8 @@ export function CartPage() {
                 Carrito
               </h1>
               <p className="mt-2 text-sm text-stone-600">
-                Revisa tus productos antes de pasar al checkout.
-              </p>
+              Revisa y ajusta cantidades antes de pasar al checkout.
+            </p>
             </div>
           </div>
         </div>

@@ -1,14 +1,15 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+
 import { StoreLayout } from '../layouts/StoreLayout'
 import { HomePage } from '../../pages/home/HomePage'
 import { CatalogPage } from '../../pages/catalog/CatalogPage'
-import { ProductDetailPage } from '../../pages/product/ProductDetailPage'
 import { CartPage } from '../../pages/cart/CartPage'
 import { CheckoutPage } from '../../pages/checkout/CheckoutPage'
 import { LoginPage } from '../../pages/auth/LoginPage'
 import { RegisterPage } from '../../pages/auth/RegisterPage'
 import { ProfilePage } from '../../pages/profile/ProfilePage'
 import { OrdersPage } from '../../pages/orders/OrdersPage'
+
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute'
 import { PublicOnlyRoute } from '../../components/auth/PublicOnlyRoute'
 
@@ -19,7 +20,10 @@ export function AppRouter() {
         <Route element={<StoreLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
-          <Route path="/products/:id" element={<ProductDetailPage />} />
+
+          {/* mantener compatibilidad por si alguien entra con URL vieja */}
+          <Route path="/products/:id" element={<Navigate to="/catalog" replace />} />
+
           <Route path="/cart" element={<CartPage />} />
 
           <Route element={<PublicOnlyRoute />}>

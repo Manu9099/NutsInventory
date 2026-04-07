@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -8,6 +9,7 @@ import {
   ShieldCheck,
   Truck,
 } from 'lucide-react'
+
 import { useCart } from '../../features/cart/hooks/useCart'
 import { useAuth } from '../../features/auth/hooks/useAuth'
 import { useStoreCustomerProfile } from '../../features/customers/hooks/useStoreCustomerProfile'
@@ -16,6 +18,7 @@ import { useCreateStoreOrder } from '../../features/orders/hooks/useCreateStoreO
 
 export function CheckoutPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const { items, subtotal, clearCart } = useCart()
   const { data: user, isLoading: isAuthLoading, isError: isAuthError } = useAuth()
@@ -45,10 +48,10 @@ export function CheckoutPage() {
   const [errorMessage, setErrorMessage] = useState('')
 
   const shipping = items.length > 0 ? 10 : 0
-  const total = subtotal + shipping
 
   useEffect(() => {
     if (!profile) return
+
     setPhone(profile.phone ?? '')
     setCity(profile.city ?? '')
     setAddress(profile.address ?? '')
@@ -66,6 +69,27 @@ export function CheckoutPage() {
   }, [user, phone, city, address])
 
   const shouldShowDetailsForm = !profileComplete || isEditingDetails
+
+  const availablePoints = profile?.loyaltyPoints ?? 0
+
+  const requestedPoints = useMemo(() => {
+    const parsed = Number(loyaltyPointsToRedeem || 0)
+    if (Number.isNaN(parsed) || parsed < 0) return 0
+    return Math.floor(parsed)
+  }, [loyaltyPointsToRedeem])
+
+  const maxRedeemablePointsByProducts = Math.floor(subtotal * 100)
+
+  const redeemablePoints = Math.min(
+    requestedPoints,
+    availablePoints,
+    maxRedeemablePointsByProducts,
+  )
+
+  const loyaltyDiscount = redeemablePoints / 100
+  const productsNetTotal = Math.max(subtotal - loyaltyDiscount, 0)
+  const finalPreviewTotal = productsNetTotal + shipping
+  const earnedPointsPreview = Math.floor(productsNetTotal)
 
   const validateDetails = () => {
     if (!phone.trim()) return 'Ingresa el teléfono.'
@@ -93,6 +117,10 @@ export function CheckoutPage() {
 
       setIsEditingDetails(false)
       setSuccessMessage('Tus datos de entrega se guardaron correctamente.')
+
+      await queryClient.invalidateQueries({
+        queryKey: ['store-customer-profile'],
+      })
     } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
@@ -100,6 +128,16 @@ export function CheckoutPage() {
           'No se pudieron guardar tus datos.',
       )
     }
+  }
+
+  const handleUseMaxPoints = () => {
+    const maxUsable = Math.min(availablePoints, maxRedeemablePointsByProducts)
+    setLoyaltyPointsToRedeem(String(maxUsable))
+  }
+
+  const handlePointsChange = (value: string) => {
+    const digitsOnly = value.replace(/[^\d]/g, '')
+    setLoyaltyPointsToRedeem(digitsOnly === '' ? '0' : digitsOnly)
   }
 
   const handleConfirmOrder = async () => {
@@ -123,8 +161,6 @@ export function CheckoutPage() {
     }
 
     try {
-      const parsedPoints = Number(loyaltyPointsToRedeem || 0)
-
       const composedNotes = [
         notes.trim(),
         `Cliente: ${user.fullName}`,
@@ -140,14 +176,19 @@ export function CheckoutPage() {
           productId: item.productId,
           quantity: item.quantity,
         })),
-        loyaltyPointsToRedeem: Number.isNaN(parsedPoints) ? 0 : parsedPoints,
+        loyaltyPointsToRedeem: redeemablePoints,
         notes: composedNotes,
       })
 
+      await queryClient.invalidateQueries({
+        queryKey: ['store-customer-profile'],
+      })
+
       setSuccessMessage(
-        `Pedido #${response.orderId} confirmado correctamente. Total neto: S/ ${Number(
-          response.netAmount,
-        ).toFixed(2)}`,
+        `Pedido #${response.orderId} confirmado correctamente.
+Descuento aplicado: S/ ${Number(response.discountApplied).toFixed(2)}
+Total neto: S/ ${Number(response.netAmount).toFixed(2)}
+Puntos ganados: ${response.loyaltyPointsEarned}`,
       )
 
       clearCart()
@@ -166,7 +207,7 @@ export function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
         <Link
           to="/cart"
           className="inline-flex items-center gap-2 text-sm font-medium text-stone-600 transition hover:text-stone-900"
@@ -175,17 +216,18 @@ export function CheckoutPage() {
           Volver al carrito
         </Link>
 
-        <div className="mt-6 rounded-3xl bg-white p-10 shadow-sm ring-1 ring-stone-200">
-          <h1 className="text-3xl font-bold tracking-tight text-stone-900">
+        <div className="mt-8 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-stone-200">
+          <h1 className="text-3xl font-semibold tracking-tight text-stone-900">
             No hay productos para pagar
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
-            Tu carrito está vacío. Agrega productos antes de continuar al checkout.
+          <p className="mt-3 text-stone-600">
+            Tu carrito está vacío. Agrega productos antes de continuar al
+            checkout.
           </p>
 
           <Link
             to="/catalog"
-            className="mt-6 inline-flex items-center justify-center rounded-xl bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
+            className="mt-6 inline-flex rounded-xl bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-95"
           >
             Ir al catálogo
           </Link>
@@ -196,10 +238,12 @@ export function CheckoutPage() {
 
   if (hasToken && (isAuthLoading || isProfileLoading)) {
     return (
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="rounded-3xl bg-white p-10 shadow-sm ring-1 ring-stone-200">
-          <h1 className="text-2xl font-bold text-stone-900">Preparando tu checkout...</h1>
-          <p className="mt-3 text-sm text-stone-600">
+      <section className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-stone-200">
+          <h1 className="text-3xl font-semibold tracking-tight text-stone-900">
+            Preparando tu checkout...
+          </h1>
+          <p className="mt-3 text-stone-600">
             Estamos cargando tu sesión y tus datos de entrega.
           </p>
         </div>
@@ -209,7 +253,7 @@ export function CheckoutPage() {
 
   if (!isAuthenticated || isAuthError) {
     return (
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
         <Link
           to="/cart"
           className="inline-flex items-center gap-2 text-sm font-medium text-stone-600 transition hover:text-stone-900"
@@ -218,31 +262,24 @@ export function CheckoutPage() {
           Volver al carrito
         </Link>
 
-        <div className="mt-6 rounded-3xl bg-white p-10 shadow-sm ring-1 ring-stone-200">
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-stone-100 p-3 text-stone-700">
-              <ShieldCheck className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-stone-900">
-                Inicia sesión para continuar
-              </h1>
-              <p className="mt-2 text-sm text-stone-600">
-                El checkout rápido necesita una sesión activa de customer.
-              </p>
-            </div>
-          </div>
+        <div className="mt-8 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-stone-200">
+          <h1 className="text-3xl font-semibold tracking-tight text-stone-900">
+            Inicia sesión para continuar
+          </h1>
+          <p className="mt-3 text-stone-600">
+            El checkout rápido necesita una sesión activa de customer.
+          </p>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-6 flex flex-wrap gap-3">
             <Link
               to="/login"
-              className="inline-flex items-center justify-center rounded-xl bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
+              className="inline-flex rounded-xl bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-95"
             >
               Iniciar sesión
             </Link>
             <Link
               to="/register"
-              className="inline-flex items-center justify-center rounded-xl border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+              className="inline-flex rounded-xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
             >
               Crear cuenta
             </Link>
@@ -254,12 +291,12 @@ export function CheckoutPage() {
 
   if (isProfileError) {
     return (
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border border-red-200 bg-red-50 p-6">
-          <h2 className="text-lg font-semibold text-red-900">
+      <section className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-stone-200">
+          <h2 className="text-2xl font-semibold text-stone-900">
             No se pudo cargar tu perfil de cliente
           </h2>
-          <p className="mt-2 text-sm text-red-700">
+          <p className="mt-3 text-stone-600">
             Intenta nuevamente. El checkout necesita tus datos de entrega.
           </p>
         </div>
@@ -268,7 +305,7 @@ export function CheckoutPage() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <Link
         to="/cart"
         className="inline-flex items-center gap-2 text-sm font-medium text-stone-600 transition hover:text-stone-900"
@@ -277,167 +314,234 @@ export function CheckoutPage() {
         Volver al carrito
       </Link>
 
-      <div className="mt-4">
+      <div className="mt-6">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
           Compra
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-stone-900">
+        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-stone-900">
           Checkout
         </h1>
-        <p className="mt-3 text-sm leading-6 text-stone-600">
-          Si ya tienes sesión activa, solo confirmas. Si te falta algo, completas solo esos datos.
+        <p className="mt-3 max-w-2xl text-stone-600">
+          Si ya tienes sesión activa, solo confirmas. Si te falta algo,
+          completas solo esos datos.
+        </p>
+        <p className="mt-2 text-sm text-stone-500">
+          Sesión activa: {user.fullName} · {user.email}
         </p>
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1.4fr_0.8fr]">
+      <div className="mt-10 grid gap-8 lg:grid-cols-[1.3fr_0.8fr]">
         <div className="space-y-6">
-          <div className="rounded-3xl border border-lime-200 bg-lime-50 p-4 text-sm text-lime-800">
-            <span className="font-semibold">Sesión activa:</span> {user.fullName} · {user.email}
-          </div>
-
-          {shouldShowDetailsForm ? (
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-stone-200">
-              <div className="mb-4 flex items-center gap-2">
-                <Truck className="h-5 w-5 text-stone-700" />
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-stone-200">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-stone-100 p-3">
+                <MapPin className="h-5 w-5 text-stone-700" />
+              </div>
+              <div>
                 <h2 className="text-xl font-semibold text-stone-900">
-                  Completa tus datos de entrega
+                  Entrega
                 </h2>
+                <p className="text-sm text-stone-500">
+                  Datos necesarios para despachar el pedido.
+                </p>
               </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-stone-700">
-                    Nombre
-                  </label>
-                  <input
-                    value={user.fullName}
-                    readOnly
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-stone-700">
-                    Correo
-                  </label>
-                  <input
-                    value={user.email}
-                    readOnly
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-stone-700">
-                    Teléfono
-                  </label>
-                  <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="999 999 999"
-                    className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-stone-700">
-                    Ciudad
-                  </label>
-                  <input
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="Lima"
-                    className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-stone-700">
-                    Dirección
-                  </label>
-                  <input
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Av. Ejemplo 123"
-                    className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSaveDetails}
-                disabled={isSavingProfile}
-                className="mt-6 inline-flex items-center justify-center rounded-xl bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-400"
-              >
-                {isSavingProfile ? 'Guardando...' : 'Guardar datos y continuar'}
-              </button>
             </div>
-          ) : (
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-stone-200">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="mb-4 flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-stone-700" />
-                    <h2 className="text-xl font-semibold text-stone-900">
-                      Datos de entrega
-                    </h2>
+
+            {shouldShowDetailsForm ? (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-stone-900">
+                  Completa tus datos de entrega
+                </h3>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-1">
+                    <label className="mb-2 block text-sm font-medium text-stone-700">
+                      Nombre
+                    </label>
+                    <input
+                      value={user.fullName}
+                      disabled
+                      className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-500 outline-none"
+                    />
                   </div>
 
-                  <div className="space-y-3 text-sm text-stone-700">
-                    <p><span className="font-semibold">Cliente:</span> {user.fullName}</p>
-                    <p><span className="font-semibold">Correo:</span> {user.email}</p>
-                    <p><span className="font-semibold">Teléfono:</span> {phone}</p>
-                    <p><span className="font-semibold">Ciudad:</span> {city}</p>
-                    <p><span className="font-semibold">Dirección:</span> {address}</p>
+                  <div className="sm:col-span-1">
+                    <label className="mb-2 block text-sm font-medium text-stone-700">
+                      Correo
+                    </label>
+                    <input
+                      value={user.email}
+                      disabled
+                      className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-1">
+                    <label className="mb-2 block text-sm font-medium text-stone-700">
+                      Teléfono
+                    </label>
+                    <input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="999 999 999"
+                      className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-1">
+                    <label className="mb-2 block text-sm font-medium text-stone-700">
+                      Ciudad
+                    </label>
+                    <input
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="Lima"
+                      className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="mb-2 block text-sm font-medium text-stone-700">
+                      Dirección
+                    </label>
+                    <input
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Av. Ejemplo 123"
+                      className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
+                    />
                   </div>
                 </div>
 
                 <button
                   type="button"
+                  onClick={handleSaveDetails}
+                  disabled={isSavingProfile}
+                  className="mt-5 inline-flex rounded-xl bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:bg-stone-400"
+                >
+                  {isSavingProfile ? 'Guardando...' : 'Guardar datos y continuar'}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-stone-900">
+                  Datos de entrega
+                </h3>
+
+                <div className="mt-4 space-y-2 text-sm text-stone-600">
+                  <p>
+                    <span className="font-medium text-stone-900">Cliente:</span>{' '}
+                    {user.fullName}
+                  </p>
+                  <p>
+                    <span className="font-medium text-stone-900">Correo:</span>{' '}
+                    {user.email}
+                  </p>
+                  <p>
+                    <span className="font-medium text-stone-900">
+                      Teléfono:
+                    </span>{' '}
+                    {phone}
+                  </p>
+                  <p>
+                    <span className="font-medium text-stone-900">Ciudad:</span>{' '}
+                    {city}
+                  </p>
+                  <p>
+                    <span className="font-medium text-stone-900">
+                      Dirección:
+                    </span>{' '}
+                    {address}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
                   onClick={() => setIsEditingDetails(true)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
                 >
                   <PencilLine className="h-4 w-4" />
                   Editar datos
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-stone-200">
-            <div className="mb-4 flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-stone-700" />
-              <h2 className="text-xl font-semibold text-stone-900">
-                Pago y notas
-              </h2>
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-stone-100 p-3">
+                <CreditCard className="h-5 w-5 text-stone-700" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-stone-900">
+                  Pago y notas
+                </h2>
+                <p className="text-sm text-stone-500">
+                  Déjalo visual por ahora y conecta la pasarela cuando cierres
+                  pagos.
+                </p>
+              </div>
             </div>
 
-            <div className="grid gap-4">
-              <div className="grid gap-3">
-                <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-stone-200 p-4 transition hover:bg-stone-50">
-                  <input type="radio" name="paymentMethod" defaultChecked className="mt-1" />
-                  <div>
-                    <p className="text-sm font-semibold text-stone-900">Tarjeta</p>
-                    <p className="mt-1 text-sm text-stone-600">
-                      Déjalo visual por ahora y conecta la pasarela cuando cierres pagos.
-                    </p>
-                  </div>
-                </label>
-              </div>
+            <div className="mt-6 grid gap-6">
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-sm font-semibold text-stone-900">
+                  Pagar con puntos
+                </p>
+                <p className="mt-1 text-sm text-stone-600">
+                  Puedes usar tus puntos para reducir el subtotal de productos.
+                </p>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-stone-700">
-                  Puntos a canjear
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  value={loyaltyPointsToRedeem}
-                  onChange={(e) => setLoyaltyPointsToRedeem(e.target.value)}
-                  placeholder="0"
-                  className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-                />
+                <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-stone-700">
+                      Puntos a canjear
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={loyaltyPointsToRedeem}
+                      onChange={(e) => handlePointsChange(e.target.value)}
+                      placeholder="0"
+                      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-stone-500"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleUseMaxPoints}
+                    className="rounded-xl border border-stone-300 px-4 py-3 text-sm font-medium text-stone-700 transition hover:bg-stone-100"
+                  >
+                    Usar máximo
+                  </button>
+                </div>
+
+                <div className="mt-4 grid gap-2 text-sm text-stone-600">
+                  <p>
+                    <span className="font-medium text-stone-900">
+                      Puntos disponibles:
+                    </span>{' '}
+                    {availablePoints}
+                  </p>
+                  <p>
+                    <span className="font-medium text-stone-900">
+                      Máximo usable ahora:
+                    </span>{' '}
+                    {Math.min(availablePoints, maxRedeemablePointsByProducts)}
+                  </p>
+                  <p>
+                    <span className="font-medium text-stone-900">
+                      Conversión:
+                    </span>{' '}
+                    100 pts = S/ 1.00
+                  </p>
+                  <p>
+                    <span className="font-medium text-stone-900">
+                      Descuento estimado:
+                    </span>{' '}
+                    S/ {loyaltyDiscount.toFixed(2)}
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -452,6 +556,30 @@ export function CheckoutPage() {
                   className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
                 />
               </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-stone-200 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-stone-900">
+                    <ShieldCheck className="h-4 w-4" />
+                    Compra segura
+                  </div>
+                  <p className="mt-2 text-sm text-stone-600">
+                    Cuando conectes tu pasarela, este flujo ya quedará listo
+                    para cobrar.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-stone-200 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-stone-900">
+                    <Truck className="h-4 w-4" />
+                    Entrega
+                  </div>
+                  <p className="mt-2 text-sm text-stone-600">
+                    Tus datos de delivery viajan junto con la orden en las notas
+                    compuestas.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -462,7 +590,7 @@ export function CheckoutPage() {
           ) : null}
 
           {successMessage ? (
-            <div className="rounded-2xl border border-lime-200 bg-lime-50 p-4 text-sm text-lime-700">
+            <div className="whitespace-pre-line rounded-2xl border border-lime-200 bg-lime-50 p-4 text-sm text-lime-700">
               {successMessage}
             </div>
           ) : null}
@@ -478,7 +606,9 @@ export function CheckoutPage() {
                 className="flex items-start justify-between gap-3 border-b border-stone-100 pb-4"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-stone-900">{item.name}</p>
+                  <p className="truncate text-sm font-medium text-stone-900">
+                    {item.name}
+                  </p>
                   <p className="mt-1 text-xs text-stone-500">
                     {item.quantity} x S/ {item.price.toFixed(2)}
                   </p>
@@ -493,8 +623,13 @@ export function CheckoutPage() {
 
           <div className="mt-6 space-y-3 text-sm text-stone-600">
             <div className="flex items-center justify-between">
-              <span>Subtotal</span>
+              <span>Subtotal productos</span>
               <span>S/ {subtotal.toFixed(2)}</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span>Descuento por puntos</span>
+              <span>- S/ {loyaltyDiscount.toFixed(2)}</span>
             </div>
 
             <div className="flex items-center justify-between">
@@ -506,23 +641,30 @@ export function CheckoutPage() {
           <div className="my-5 h-px bg-stone-200" />
 
           <div className="flex items-center justify-between">
-            <span className="text-base font-semibold text-stone-900">Total</span>
+            <span className="text-base font-semibold text-stone-900">
+              Total a pagar
+            </span>
             <span className="text-2xl font-bold text-stone-900">
-              S/ {total.toFixed(2)}
+              S/ {finalPreviewTotal.toFixed(2)}
             </span>
           </div>
+
+          <p className="mt-3 text-xs text-stone-500">
+            Ganarías aprox. {earnedPointsPreview} puntos con esta compra.
+          </p>
 
           <button
             type="button"
             onClick={handleConfirmOrder}
-            disabled={isCreatingOrder || shouldShowDetailsForm}
+            disabled={isCreatingOrder || isSavingProfile || shouldShowDetailsForm}
             className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:bg-stone-400"
           >
             {isCreatingOrder ? 'Confirmando...' : 'Confirmar pedido'}
           </button>
 
           <p className="mt-3 text-xs text-stone-500">
-            Primero confirmas el pedido. Cuando integres la pasarela, el siguiente paso será pagar.
+            Primero confirmas el pedido. Cuando integres la pasarela, el
+            siguiente paso será pagar.
           </p>
         </aside>
       </div>
