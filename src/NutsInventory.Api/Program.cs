@@ -105,7 +105,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+var tempSeedImagesKey = builder.Configuration["TempOps:SeedProductImagesKey"];
 var app = builder.Build();
 app.UseCors(FrontendCorsPolicy);
 
@@ -187,7 +187,63 @@ app.MapGet("/api/products/low-stock", async (ISender sender) =>
     var result = await sender.Send(new GetLowStockProductsQuery());
     return Results.Ok(result);
 });
+//--- temporal endpoints 
+app.MapPost("/api/dev/seed-product-images", async (
+    HttpRequest request,
+    NutsDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(tempSeedImagesKey))
+        return Results.Problem(
+            title: "Configuración faltante",
+            detail: "Falta TempOps:SeedProductImagesKey en variables de entorno.",
+            statusCode: StatusCodes.Status500InternalServerError);
 
+    var providedKey = request.Headers["X-Seed-Key"].ToString();
+
+    if (!string.Equals(providedKey, tempSeedImagesKey, StringComparison.Ordinal))
+        return Results.Unauthorized();
+
+    var imageMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["ALM-500"] = "/products/almendras-premium-500g.jpg",
+        ["NUE-500"] = "/products/nueces-500g.jpg",
+        ["PIS-250"] = "/products/pistachos-250g.jpg",
+        ["MIX-500"] = "/products/mix-saludable-500g.jpg",
+        ["PEC-250"] = "/products/pecanas-250g.jpg",
+        ["CAS-250"] = "/products/castanas-250g.jpg",
+        ["MAN-500"] = "/products/mani-salado-500g.jpg",
+        ["KETO-300"] = "/products/mix-keto-300g.jpg",
+        ["ARA-250"] = "/products/arandanos-deshidratados-250g.jpg",
+        ["PAS-250"] = "/products/pasas-rubias-250g.jpg",
+    };
+
+    var products = await db.Products
+        .Where(p => imageMap.Keys.Contains(p.Sku))
+        .ToListAsync(cancellationToken);
+
+    foreach (var product in products)
+    {
+        product.UpdateDetails(
+            product.Name,
+            product.Sku,
+            product.Category,
+            product.Price,
+            product.ReorderLevel,
+            product.Weight,
+            product.Description,
+            imageMap[product.Sku]
+        );
+    }
+
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(new
+    {
+        updated = products.Count,
+        skus = products.Select(p => p.Sku).OrderBy(x => x).ToList()
+    });
+}); 
 app.MapGet("/api/dashboard/summary", async (ISender sender) =>
 {
     var result = await sender.Send(new GetDashboardSummaryQuery());
